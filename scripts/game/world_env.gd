@@ -38,8 +38,11 @@ void fragment() {
 		float path = step(abs(wpos.z), 3.0);
 		col = mix(col, c3, path * 0.85);
 	} else {
-		float crater = smoothstep(0.62, 0.7, noise(wpos.xz * 0.18)) - smoothstep(0.7, 0.78, noise(wpos.xz * 0.18));
-		col = mix(c1, c2, noise(wpos.xz * 0.4)) * (0.9 + n * 1.5) - crater * 0.12;
+		float cn = noise(wpos.xz * 0.16);
+		float crater = smoothstep(0.66, 0.72, cn);
+		float rim = smoothstep(0.6, 0.66, cn) - crater;
+		col = mix(c1, c2, noise(wpos.xz * 0.4)) * (0.9 + n * 1.5);
+		col = col * (1.0 - crater * 0.22) + rim * 0.06;
 	}
 	ALBEDO = col;
 	ROUGHNESS = 0.95;
@@ -92,13 +95,14 @@ func setup(world_idx: int, quality: int) -> void:
 		sky.sky_material = ps
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.9 if world != 3 else 0.6
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = 1.05
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(String(w["sky_horizon"])).lerp(Color(String(w["sky_top"])), 0.35)
+	env.ambient_light_energy = 0.42 if world != 3 else 0.5
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	env.tonemap_exposure = 1.0
 	env.fog_enabled = quality > 0
 	env.fog_light_color = Color(String(w["fog"]))
-	env.fog_density = 0.0035 if world != 3 else 0.002
+	env.fog_density = 0.0016 if world != 3 else 0.0008
 	env.fog_sky_affect = 0.0
 	env.glow_enabled = quality >= 2
 	env.glow_intensity = 0.4
@@ -107,7 +111,7 @@ func setup(world_idx: int, quality: int) -> void:
 
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-52, -28, 0)
-	sun.light_energy = 1.25 if world != 3 else 1.0
+	sun.light_energy = 0.95 if world != 3 else 0.9
 	sun.light_color = Color(1.0, 0.96, 0.9) if world != 3 else Color(0.85, 0.85, 1.0)
 	sun.shadow_enabled = quality >= 1
 	sun.directional_shadow_max_distance = 45.0 if quality == 1 else 70.0
@@ -127,7 +131,7 @@ func setup(world_idx: int, quality: int) -> void:
 	var cols := [
 		[Color("#58B84A"), Color("#4CA642"), Color("#8C93A0"), Color("#FFFFFF")],
 		[Color("#5CBF55"), Color("#52B04C"), Color("#5C6270"), Color("#E9E2D6")],
-		[Color("#F7C6D9"), Color("#C9E7FF"), Color("#FFE59A"), Color("#FFFFFF")],
+		[Color("#EE8FB8"), Color("#8CCBF2"), Color("#FFD36B"), Color("#FFFFFF")],
 		[Color("#8E8AA6"), Color("#6E6A88"), Color("#55516E"), Color("#FFFFFF")],
 	]
 	var c: Array = cols[world]

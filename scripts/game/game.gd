@@ -249,9 +249,14 @@ func _process(dt: float) -> void:
 
 func _flight(dt: float) -> void:
 	if auto_play:
+		# a simple "decent player": flip on the way up, level out on the way down
 		_auto_t += dt
-		riley.rot_input = sin(_auto_t * 1.7) * 0.6
-		if int(_auto_t * 10) % 37 == 0:
+		var vv := riley.linear_velocity
+		if vv.y > 7.0 and fmod(_auto_t, 6.0) < 3.0:
+			riley.rot_input = 1.0
+		else:
+			riley.rot_input = clampf(-(riley.body_angle() * 2.5 + riley.angular_velocity.z * 0.55), -1.0, 1.0)
+		if vv.y < -6.0 and fmod(_auto_t, 5.0) < dt * 1.5:
 			use_gadget()
 	else:
 		riley.rot_input = _rotation_input()

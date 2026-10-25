@@ -25,9 +25,9 @@ func snap() -> void:
 	if target == null:
 		return
 	var p := _target_pos()
-	fx = p.x + 6.0
-	fy = maxf(p.y + 1.5, 3.0)
-	dist = 15.0
+	fx = p.x + 2.5
+	fy = maxf(p.y + 0.5, 2.2)
+	dist = 9.0
 	_apply(0.0)
 
 
@@ -59,20 +59,20 @@ func _process(dt: float) -> void:
 	var v := _target_vel()
 	var speed := v.length()
 	var alt := maxf(p.y, 0.0)
-	var want_dist := clampf(12.5 + speed * 0.3 + alt * 0.42, 12.5, 46.0)
-	var want_look := clampf(v.x * 0.42, -3.0, 13.0)
+	var want_dist := clampf(8.5 + speed * 0.16 + alt * 0.3, 8.5, 30.0)
+	var want_look := clampf(v.x * 0.25, -2.0, 7.0)
 	var want_fx := p.x + want_look
-	var want_fy := maxf(p.y * 0.62 + 2.4, 3.2)
+	var want_fy := maxf(p.y * 0.8 + 1.0, 2.4)
 	if mode == "launch":
-		want_dist = 13.5
-		want_fx = p.x + 5.0
-		want_fy = maxf(p.y + 1.0, 3.2)
+		want_dist = 9.0
+		want_fx = p.x + 2.5
+		want_fy = maxf(p.y + 0.5, 2.2)
 	elif focus_hint != Vector3.ZERO and v.y < 2.0:
 		# pull the frame toward the next landing spot so it is visible before arriving
 		var gap := focus_hint.x - p.x
 		if gap > 0.0 and gap < 40.0:
-			want_fx = lerpf(want_fx, (p.x + focus_hint.x) * 0.5, 0.45)
-			want_dist = maxf(want_dist, gap * 0.55 + 10.0)
+			want_fx = lerpf(want_fx, (p.x + focus_hint.x) * 0.5, 0.35)
+			want_dist = maxf(want_dist, minf(gap * 0.42 + 7.0, 22.0))
 	dist = lerpf(dist, want_dist, 1.0 - exp(-1.6 * dt))
 	look = lerpf(look, want_look, 1.0 - exp(-2.0 * dt))
 	fx = lerpf(fx, want_fx, 1.0 - exp(-5.0 * dt))
@@ -87,6 +87,6 @@ func _apply(dt: float) -> void:
 	var shake := trauma * trauma
 	var sx := (sin(_t * 47.0) + sin(_t * 31.0 + 1.3)) * 0.5 * shake * 0.9
 	var sy := (sin(_t * 53.0 + 0.7) + sin(_t * 29.0)) * 0.5 * shake * 0.9
-	var eye := Vector3(fx + sx, fy + d * 0.16 + sy, d)
+	var eye := Vector3(fx + sx, fy + d * 0.12 + sy, d)
 	global_position = eye
 	look_at(Vector3(fx + sx * 0.5, fy + sy * 0.5, 0.0), Vector3.UP)
