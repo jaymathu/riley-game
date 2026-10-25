@@ -156,7 +156,7 @@ func follow(node: Node3D, bone: String, up := 0.0, side := Vector3.ZERO) -> void
 	if idx < 0:
 		return
 	node.top_level = true
-	followers.append({"node": node, "bone": idx, "up": up, "side": side})
+	followers.append({"node": node, "bone": idx, "name": bone, "up": up, "side": side})
 
 
 func _remove_follower(node: Node3D) -> void:
@@ -187,6 +187,14 @@ func _process(_dt: float) -> void:
 		if not is_instance_valid(node):
 			continue
 		var pose: Transform3D = skel.global_transform * skel.get_bone_global_pose(int(f["bone"]))
+		if ragdolling:
+			var bn := String(f["name"])
+			if phys_bones.has(bn):
+				var pb: PhysicalBone3D = phys_bones[bn]
+				pose = pb.global_transform * pb.body_offset.affine_inverse()
+			else:
+				node.visible = false
+				continue
 		var y := pose.basis.y.normalized()
 		var z := (fwd - y * fwd.dot(y))
 		if z.length() < 0.01:
