@@ -131,7 +131,7 @@ func setup(world_idx: int, quality: int) -> void:
 	var cols := [
 		[Color("#58B84A"), Color("#4CA642"), Color("#8C93A0"), Color("#FFFFFF")],
 		[Color("#5CBF55"), Color("#52B04C"), Color("#5C6270"), Color("#E9E2D6")],
-		[Color("#F29BC2"), Color("#F6B6D2"), Color("#FFD36B"), Color("#FFFFFF")],
+		[Color("#D9779F"), Color("#E68CB4"), Color("#F2BF4E"), Color("#FFFFFF")],
 		[Color("#8E8AA6"), Color("#6E6A88"), Color("#55516E"), Color("#FFFFFF")],
 	]
 	var c: Array = cols[world]

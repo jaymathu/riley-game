@@ -21,6 +21,7 @@ var cam: CameraRig
 var fx: FX
 var hud: Node
 var auto_play := false
+var auto_reckless := false
 
 var power := 0.0
 var angle := 45.0
@@ -253,7 +254,9 @@ func _flight(dt: float) -> void:
 		# a simple "decent player": flip on the way up, level out on the way down
 		_auto_t += dt
 		var vv := riley.linear_velocity
-		if vv.y > 7.0 and fmod(_auto_t, 6.0) < 3.0:
+		if auto_reckless:
+			riley.rot_input = 1.0
+		elif vv.y > 7.0 and fmod(_auto_t, 6.0) < 3.0:
 			riley.rot_input = 1.0
 		else:
 			riley.rot_input = clampf(-(riley.body_angle() * 2.5 + riley.angular_velocity.z * 0.55), -1.0, 1.0)

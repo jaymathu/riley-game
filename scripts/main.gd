@@ -271,6 +271,21 @@ func _run_smoke() -> void:
 		await get_tree().create_timer(0.8).timeout
 		if i < 2:
 			await _shot("%02d_results_%d" % [20 + i, i])
+	# deliberately bad landings to exercise the crash + ragdoll path
+	Save.data["world"] = 0
+	start_run(0)
+	game.auto_reckless = true
+	var tt := 0.0
+	var shot_n := 0
+	while tt < 22.0 and not results.visible:
+		await get_tree().create_timer(0.1).timeout
+		tt += 0.1
+		if game and game.riley.phase == RileyPlayer.Phase.RAGDOLL and shot_n < 3:
+			await _shot("30_ragdoll_%d" % shot_n)
+			shot_n += 1
+			await get_tree().create_timer(0.25).timeout
+	if game:
+		print("SMOKE: reckless run distance=%d crashes=%d ragdoll=%s" % [int(game.distance), game.crashes, str(game.riley.visual.ragdolling)])
 	show_menu()
 	await get_tree().create_timer(0.5).timeout
 	print("SMOKE OK")
