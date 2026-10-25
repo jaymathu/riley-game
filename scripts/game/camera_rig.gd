@@ -59,7 +59,7 @@ func _process(dt: float) -> void:
 	var v := _target_vel()
 	var speed := v.length()
 	var alt := maxf(p.y, 0.0)
-	var want_dist := clampf(8.5 + speed * 0.16 + alt * 0.3, 8.5, 30.0)
+	var want_dist := clampf(7.5 + speed * 0.14 + alt * 0.28, 7.5, 26.0)
 	var want_look := clampf(v.x * 0.25, -2.0, 7.0)
 	var want_fx := p.x + want_look
 	var want_fy := maxf(p.y * 0.8 + 1.0, 2.4)
@@ -72,7 +72,7 @@ func _process(dt: float) -> void:
 		var gap := focus_hint.x - p.x
 		if gap > 0.0 and gap < 40.0:
 			want_fx = lerpf(want_fx, (p.x + focus_hint.x) * 0.5, 0.35)
-			want_dist = maxf(want_dist, minf(gap * 0.42 + 7.0, 22.0))
+			want_dist = maxf(want_dist, minf(gap * 0.38 + 6.0, 18.0))
 	dist = lerpf(dist, want_dist, 1.0 - exp(-1.6 * dt))
 	look = lerpf(look, want_look, 1.0 - exp(-2.0 * dt))
 	fx = lerpf(fx, want_fx, 1.0 - exp(-5.0 * dt))

@@ -285,6 +285,7 @@ func bind(g: Node) -> void:
 	gadget_btn.tex = Assets.icon(String(gc.def.get("icon", "umbrella")))
 	gadget_changed()
 	aim_box.visible = true
+	aim_box.modulate.a = 1.0
 	angle_meter.visible = false
 	gadget_btn.visible = false
 	rot_left.visible = false

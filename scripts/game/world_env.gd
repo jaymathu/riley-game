@@ -32,7 +32,7 @@ void fragment() {
 		col = mix(col, c4 * 0.85, clamp(walk, 0.0, 1.0));
 		col = mix(col, vec3(1.0, 0.85, 0.2), dash);
 	} else if (world_type == 2) {
-		vec2 t = floor(wpos.xz / 2.0);
+		vec2 t = floor(wpos.xz / 4.0);
 		float chk = mod(t.x + t.y, 2.0);
 		col = mix(c1, c2, chk) * (0.96 + n * 0.6);
 		float path = step(abs(wpos.z), 3.0);
@@ -131,7 +131,7 @@ func setup(world_idx: int, quality: int) -> void:
 	var cols := [
 		[Color("#58B84A"), Color("#4CA642"), Color("#8C93A0"), Color("#FFFFFF")],
 		[Color("#5CBF55"), Color("#52B04C"), Color("#5C6270"), Color("#E9E2D6")],
-		[Color("#EE8FB8"), Color("#8CCBF2"), Color("#FFD36B"), Color("#FFFFFF")],
+		[Color("#F29BC2"), Color("#F6B6D2"), Color("#FFD36B"), Color("#FFFFFF")],
 		[Color("#8E8AA6"), Color("#6E6A88"), Color("#55516E"), Color("#FFFFFF")],
 	]
 	var c: Array = cols[world]

@@ -265,9 +265,9 @@ func _run_smoke() -> void:
 				await _shot("05_pause")
 				resume()
 		if game:
-			print("SMOKE: run %d finished=%s distance=%d score=%d landings=%d perfects=%d combo=%d coins=%d tricks=%d" % [
+			print("SMOKE: run %d finished=%s distance=%d score=%d landings=%d perfects=%d combo=%d coins=%d tricks=%d crashes=%d ragdoll=%s" % [
 				i, str(results.visible), int(game.distance), game.total_score(), game.landings, game.perfects,
-				game.best_combo, game.coins_run, game.tricks])
+				game.best_combo, game.coins_run, game.tricks, game.crashes, str(game.riley.visual.ragdolling)])
 		await get_tree().create_timer(0.8).timeout
 		if i < 2:
 			await _shot("%02d_results_%d" % [20 + i, i])

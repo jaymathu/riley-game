@@ -38,6 +38,7 @@ var perfects := 0
 var tricks := 0
 var interactions := 0
 var coins_run := 0
+var crashes := 0
 var max_alt := 0.0
 var sky_high_done := false
 var _last_prop_id := 0
@@ -104,7 +105,7 @@ func _exit_tree() -> void:
 
 func _place_in_cannon() -> void:
 	var d := launcher.dir()
-	riley.set_cannon_pose(launcher.muzzle_pos() - d * 0.5, atan2(d.y, d.x))
+	riley.set_cannon_pose(launcher.muzzle_pos() + d * 0.12, atan2(d.y, d.x))
 
 
 func _hint(t: String) -> void:
@@ -346,6 +347,7 @@ func _on_event(e: Dictionary) -> void:
 				hud.call("flip_popup", pre + name_txt + "!")
 			Audio.play("whoosh", -6.0, 1.0 + n * 0.08)
 		"crash":
+			crashes += 1
 			combo = 0
 			Audio.play("crash_bonk")
 			Audio.voice("voice_ouch")

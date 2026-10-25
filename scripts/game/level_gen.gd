@@ -112,7 +112,7 @@ func _spawn(kind: String, size: float) -> PropBase:
 		"trampoline", "bounce_house", "mattress", "cushion", "duck", "tire", "floating":
 			prop = BouncePad.new().configure(kind)
 			if kind == "floating":
-				y = rng.randf_range(1.5, 6.5) + difficulty() * 3.0
+				y = rng.randf_range(1.0, 2.5) if next_x < 60.0 else rng.randf_range(1.5, 6.0) + difficulty() * 3.0
 		"spring":
 			prop = SpringPad.new().configure(rng.randf_range(56.0, 74.0), rng.randf_range(20.0, 25.0))
 		"pool":
@@ -317,7 +317,7 @@ func _place_decor() -> void:
 		2:
 			if r.randf() < 0.55:
 				_deco("tent", x0 + r.randf_range(0, span), r.randf_range(-20.0, -13.0), r.randf_range(0.9, 1.3))
-			if int(x0) % 312 < 24:
+			if posmod(int(x0), 312) < 24 and x0 > 20.0:
 				_deco("ferris_wheel", x0 + 12.0, -42.0, 1.4, 0, 0.0, false)
 			elif r.randf() < 0.45:
 				_deco("coaster", x0 + 12.0, -28.0, 1.0, 0, 0.0, false)
@@ -329,9 +329,9 @@ func _place_decor() -> void:
 				_deco("moon_rock", x0 + r.randf_range(0, span), r.randf_range(-24.0, -5.0), r.randf_range(0.6, 2.2), 0, r.randf() * TAU)
 			if r.randf() < 0.15:
 				_deco("flag", x0 + r.randf_range(0, span), r.randf_range(-9.0, -6.0))
-			if int(x0) % 960 < 24:
+			if posmod(int(x0), 960) < 24:
 				_deco("planet", x0 + 60.0, -170.0, r.randf_range(3.0, 5.0), r.randf_range(30.0, 55.0), r.randf() * TAU, false)
-			elif int(x0) % 960 >= 480 and int(x0) % 960 < 504:
+			elif posmod(int(x0), 960) >= 480 and posmod(int(x0), 960) < 504:
 				_deco("space_station", x0 + 20.0, -110.0, 1.5, r.randf_range(25.0, 40.0), 0.3, false)
 	if world != 3 and r.randf() < 0.55:
 		_deco("cloud", x0 + r.randf_range(0, span), r.randf_range(-70.0, -45.0), r.randf_range(1.5, 3.0), r.randf_range(18.0, 34.0), 0.0, false)
