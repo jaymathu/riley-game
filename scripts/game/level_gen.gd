@@ -218,10 +218,11 @@ func _process(dt: float) -> void:
 
 func _cleanup(limit: float) -> void:
 	for i in range(props.size() - 1, -1, -1):
-		var p: Node3D = props[i]
-		if not is_instance_valid(p):
+		if not is_instance_valid(props[i]):
 			props.remove_at(i)
-		elif p.position.x + 20.0 < limit:
+			continue
+		var p: Node3D = props[i]
+		if p.position.x + 20.0 < limit:
 			p.queue_free()
 			props.remove_at(i)
 	for i in range(decor.size() - 1, -1, -1):

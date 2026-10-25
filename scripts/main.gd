@@ -210,13 +210,32 @@ func _back() -> void:
 
 
 # ------------------------------------------------------------ automated smoke test (CI)
+var _shot_dir := ""
+
+
+func _shot(shot_name: String) -> void:
+	if _shot_dir == "":
+		return
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	if img == null or img.is_empty():
+		return
+	img.resize(960, int(960.0 * img.get_height() / maxf(1.0, img.get_width())), Image.INTERPOLATE_BILINEAR)
+	img.save_png(_shot_dir.path_join(shot_name + ".png"))
+
+
 func _run_smoke() -> void:
 	print("SMOKE: start")
-	await get_tree().create_timer(1.0).timeout
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--screens="):
+			_shot_dir = a.substr(10)
+			DirAccess.make_dir_recursive_absolute(_shot_dir)
+	await get_tree().create_timer(1.5).timeout
+	await _shot("00_menu")
 	for sub in ["upgrades", "style", "gadgets", "worlds", "scores", "settings"]:
 		menu.open(sub)
-		await get_tree().process_frame
-		await get_tree().process_frame
+		await get_tree().create_timer(0.4).timeout
+		await _shot("01_menu_" + sub)
 		menu.close_sub()
 	Save.add_coins(20000)
 	Save.buy_upgrade("power")
@@ -233,14 +252,25 @@ func _run_smoke() -> void:
 		print("SMOKE: world %d gadget %s" % [w, Save.equipped_gadget()])
 		start_run(w)
 		var t := 0.0
-		while t < 20.0 and not results.visible:
-			await get_tree().create_timer(0.5).timeout
-			t += 0.5
-			if i == 0 and t == 3.0:
+		var shots := [0.5, 1.6, 2.6, 4.0, 6.0, 9.0]
+		while t < 22.0 and not results.visible:
+			await get_tree().create_timer(0.1).timeout
+			t += 0.1
+			for st in shots:
+				if absf(t - float(st)) < 0.05 and i < 4:
+					await _shot("%02d_run%d_w%d_t%04.1f" % [10 + i, i, w, t])
+			if i == 0 and absf(t - 3.0) < 0.05:
 				pause()
 				await get_tree().create_timer(0.3, true).timeout
+				await _shot("05_pause")
 				resume()
-		print("SMOKE: run %d finished=%s distance=%d" % [i, str(results.visible), int(game.distance) if game else -1])
+		if game:
+			print("SMOKE: run %d finished=%s distance=%d score=%d landings=%d perfects=%d combo=%d coins=%d tricks=%d" % [
+				i, str(results.visible), int(game.distance), game.total_score(), game.landings, game.perfects,
+				game.best_combo, game.coins_run, game.tricks])
+		await get_tree().create_timer(0.8).timeout
+		if i < 2:
+			await _shot("%02d_results_%d" % [20 + i, i])
 	show_menu()
 	await get_tree().create_timer(0.5).timeout
 	print("SMOKE OK")

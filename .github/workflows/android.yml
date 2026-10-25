@@ -21,6 +21,8 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    permissions:
+      contents: write
     env:
       HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
@@ -136,6 +138,30 @@ jobs:
           name: riley-debug-apk
           path: build/riley-debug.apk
           if-no-files-found: error
+
+      - name: Visual check (software-rendered screenshots)
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq > /dev/null && sudo apt-get install -y -qq xvfb libgl1-mesa-dri mesa-utils > /dev/null
+          mkdir -p screens
+          timeout 900 xvfb-run -a -s "-screen 0 1280x720x24" ./godot --path . --rendering-driver opengl3 \
+            --rendering-method gl_compatibility --resolution 1280x720 -- --smoke --screens=$PWD/screens 2>&1 | tee visual.log || true
+          echo "::notice title=screens::$(ls screens | wc -l) screenshots"
+          grep -E "SMOKE: run" visual.log | sed 's/^/::notice title=visual::/' || true
+
+      - name: Publish screenshots + logs to the ci-screens branch
+        if: ${{ github.event_name != 'pull_request' }}
+        continue-on-error: true
+        run: |
+          mkdir -p screens/logs
+          cp -f import.log smoke.log export.log visual.log screens/logs/ 2>/dev/null || true
+          cd screens
+          git init -q -b ci-screens
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -q -m "Screens for ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" ci-screens
 
       - name: Release build (APK + AAB) when signing secrets exist
         if: ${{ env.HAS_KEYSTORE == 'true' }}
