@@ -279,6 +279,13 @@ func _ground(cn: Vector3, s: PhysicsDirectBodyState3D) -> Variant:
 	return out
 
 
+## Test hook: crash right now (used by the automated smoke test).
+func debug_crash() -> void:
+	if phase == Phase.FLYING:
+		_crash_pending = true
+		_events.append({"type": "crash", "speed": linear_velocity.length(), "point": global_position})
+
+
 func cp_or(s: PhysicsDirectBodyState3D) -> Vector3:
 	return s.transform.origin
 

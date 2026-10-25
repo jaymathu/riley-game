@@ -280,6 +280,8 @@ func _run_smoke() -> void:
 	while tt < 22.0 and not results.visible:
 		await get_tree().create_timer(0.1).timeout
 		tt += 0.1
+		if game and absf(tt - 2.5) < 0.05:
+			game.riley.debug_crash()
 		if game and game.riley.phase == RileyPlayer.Phase.RAGDOLL and shot_n < 3:
 			await _shot("30_ragdoll_%d" % shot_n)
 			shot_n += 1
