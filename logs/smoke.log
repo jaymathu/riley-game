@@ -1,0 +1,21 @@
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+
+SMOKE: start
+SMOKE: world 0 gadget umbrella
+SMOKE: run 0 finished=true distance=34 score=1073 landings=1 perfects=0 combo=1 coins=7 tricks=1 crashes=0 ragdoll=false
+SMOKE: world 1 gadget rocket
+SMOKE: run 1 finished=true distance=42 score=1473 landings=2 perfects=0 combo=2 coins=6 tricks=1 crashes=0 ragdoll=false
+SMOKE: world 2 gadget balloon
+SMOKE: run 2 finished=true distance=35 score=1001 landings=1 perfects=0 combo=1 coins=4 tricks=1 crashes=0 ragdoll=false
+SMOKE: world 3 gadget propeller
+SMOKE: run 3 finished=true distance=52 score=1424 landings=1 perfects=1 combo=1 coins=4 tricks=1 crashes=0 ragdoll=false
+SMOKE: world 0 gadget plunger
+SMOKE: run 4 finished=true distance=56 score=1226 landings=2 perfects=0 combo=1 coins=3 tricks=1 crashes=0 ragdoll=false
+SMOKE: world 1 gadget mattress
+SMOKE: run 5 finished=true distance=44 score=1544 landings=2 perfects=0 combo=2 coins=8 tricks=1 crashes=0 ragdoll=false
+SMOKE: reckless run distance=17 crashes=1 ragdoll=true
+SMOKE OK
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+     at: cleanup (core/object/object.cpp:2514)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:795)
