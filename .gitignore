@@ -1,0 +1,8 @@
+.godot/
+build/
+*.tmp
+.import/
+export_credentials.cfg
+*.keystore
+*.jks
+__pycache__/

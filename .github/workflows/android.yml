@@ -1,0 +1,166 @@
+name: Android build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      target_sdk:
+        description: "Android target SDK for the Play (AAB) build"
+        required: false
+        default: "36"
+
+env:
+  # Tried in order; the first version whose editor + export templates exist is used.
+  GODOT_VERSIONS: "4.5.1 4.5 4.4.1"
+  TARGET_SDK: ${{ github.event.inputs.target_sdk || '36' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" "build-tools;35.0.0" "platforms;android-35" "build-tools;36.0.0" "platforms;android-36" || \
+          sdkmanager "platform-tools" "build-tools;35.0.0" "platforms;android-35"
+
+      - name: Download Godot editor and export templates
+        run: |
+          set -e
+          for V in $GODOT_VERSIONS; do
+            BASE="https://github.com/godotengine/godot/releases/download/${V}-stable"
+            if curl -fsIL "$BASE/Godot_v${V}-stable_linux.x86_64.zip" > /dev/null; then
+              echo "Using Godot $V"
+              echo "GODOT_VERSION=$V" >> "$GITHUB_ENV"
+              curl -fsSL -o godot.zip "$BASE/Godot_v${V}-stable_linux.x86_64.zip"
+              curl -fsSL -o templates.tpz "$BASE/Godot_v${V}-stable_export_templates.tpz"
+              break
+            fi
+          done
+          test -f godot.zip
+          unzip -q godot.zip
+          mv Godot_v*-stable_linux.x86_64 godot
+          chmod +x godot
+          V=$(grep GODOT_VERSION "$GITHUB_ENV" | tail -1 | cut -d= -f2)
+          TDIR="$HOME/.local/share/godot/export_templates/${V}.stable"
+          mkdir -p "$TDIR"
+          unzip -q templates.tpz -d tpl
+          mv tpl/templates/* "$TDIR/"
+          ls "$TDIR" | head -50
+
+      - name: Configure Godot for Android (debug keystore + SDK paths)
+        run: |
+          set -e
+          keytool -genkeypair -v -keystore "$HOME/debug.keystore" -storepass android -alias androiddebugkey \
+            -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          MAJOR_MINOR=$(echo "$GODOT_VERSION" | cut -d. -f1,2)
+          mkdir -p "$HOME/.config/godot"
+          for F in "editor_settings-4.tres" "editor_settings-${MAJOR_MINOR}.tres"; do
+            cat > "$HOME/.config/godot/$F" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_SDK_ROOT"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$HOME/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+            sed -i 's/^          //' "$HOME/.config/godot/$F"
+          done
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+          cat "$HOME/.config/godot/editor_settings-4.tres"
+
+      - name: Import project assets
+        run: |
+          ./godot --headless --path . --import 2>&1 | tee import.log || true
+          if [ ! -d .godot/imported ]; then
+            timeout 900 ./godot --headless --path . --editor --quit-after 3000 2>&1 | tee -a import.log || true
+          fi
+          ls .godot/imported | wc -l
+
+      - name: Smoke test (headless gameplay run)
+        id: smoke
+        continue-on-error: true
+        run: |
+          timeout 420 ./godot --headless --path . -- --smoke 2>&1 | tee smoke.log || true
+          echo "### Smoke test" >> "$GITHUB_STEP_SUMMARY"
+          ERRS=$(grep -cE "SCRIPT ERROR|Parse Error|Invalid call|Invalid access|Nonexistent function" smoke.log || true)
+          echo "Script errors: $ERRS" >> "$GITHUB_STEP_SUMMARY"
+          grep -E "SMOKE" smoke.log >> "$GITHUB_STEP_SUMMARY" || true
+          grep -q "SMOKE OK" smoke.log
+          test "$ERRS" = "0"
+
+      - name: Export debug APK
+        run: |
+          mkdir -p build
+          ./godot --headless --path . --export-debug "Android" build/riley-debug.apk 2>&1 | tee export.log
+          test -f build/riley-debug.apk
+          ls -la build
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: riley-debug-apk
+          path: build/riley-debug.apk
+          if-no-files-found: error
+
+      - name: Release build (APK + AAB) when signing secrets exist
+        if: ${{ env.HAS_KEYSTORE == 'true' }}
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_USER: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+          KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -e
+          echo "$KEYSTORE_B64" | base64 -d > "$HOME/release.keystore"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$HOME/release.keystore"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_USER="$KEYSTORE_USER"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD="$KEYSTORE_PASS"
+          CODE=${GITHUB_RUN_NUMBER}
+          sed -i "s/^version\/code=.*/version\/code=${CODE}/" export_presets.cfg
+          sed -i "s/^gradle_build\/target_sdk=.*/gradle_build\/target_sdk=\"${TARGET_SDK}\"/" export_presets.cfg
+          ./godot --headless --path . --export-release "Android" build/riley-release.apk
+          ./godot --headless --path . --install-android-build-template || true
+          ./godot --headless --path . --export-release "Android AAB" build/riley-release.aab
+          ls -la build
+
+      - name: Upload release builds
+        if: ${{ hashFiles('build/riley-release.*') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: riley-release
+          path: |
+            build/riley-release.apk
+            build/riley-release.aab
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            import.log
+            smoke.log
+            export.log
+          if-no-files-found: ignore

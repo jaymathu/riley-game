@@ -1,0 +1,229 @@
+<title>Riley Character Viewer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: one stage card (the 3D model) over a strip of animation "clip" chips, like a game's character-select screen. */
+:root {
+  --sky: #2f86e6;
+  --sky-deep: #155bb5;
+  --panel: #0f3f86;
+  --panel-edge: #0a2c63;
+  --sun: #ffd22e;
+  --ink: #ffffff;
+  --muted: #bcd8ff;
+  --red: #e8342c;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: radial-gradient(120% 80% at 50% 0%, #6fb6ff 0%, var(--sky) 45%, var(--sky-deep) 100%) fixed, var(--sky-deep);
+  color: var(--ink);
+  font-family: var(--body);
+}
+.wrap {
+  max-width: 980px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 28px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 {
+  font-family: var(--display); font-weight: 400; margin: 0;
+  font-size: clamp(30px, 6vw, 46px); letter-spacing: .02em; line-height: 1;
+  color: var(--sun);
+  text-shadow: 0 3px 0 var(--red), 0 6px 0 var(--panel-edge);
+}
+.sub { font-weight: 800; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.stage {
+  position: relative; border-radius: 22px; overflow: hidden;
+  background: linear-gradient(180deg, #bfe2ff 0%, #8cc8f0 70%, #79bde9 100%);
+  border: 4px solid var(--panel-edge);
+  box-shadow: 0 8px 0 var(--panel-edge), 0 18px 40px rgba(5, 25, 70, .35);
+  aspect-ratio: 4 / 3.4; max-width: 100%; max-height: 72vh; width: 100%;
+}
+#c { display: block; width: 100%; height: 100%; touch-action: none; }
+.tag {
+  position: absolute; left: 12px; top: 12px;
+  background: var(--panel); border: 3px solid var(--panel-edge); border-radius: 12px;
+  padding: 6px 12px; font-family: var(--display); font-size: 18px; letter-spacing: .03em;
+}
+.tag small { display: block; font-family: var(--body); font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .06em; }
+.tools { position: absolute; right: 12px; top: 12px; display: flex; gap: 8px; }
+.icon-btn {
+  font: 800 12px var(--body); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink); background: var(--panel); border: 3px solid var(--panel-edge);
+  border-radius: 12px; padding: 8px 10px; cursor: pointer;
+}
+.icon-btn[aria-pressed="true"] { background: var(--sun); color: var(--panel-edge); }
+.hint { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font-size: 12px; font-weight: 700; color: #0e3b78; opacity: .75; pointer-events: none; }
+#loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-size: 22px; color: var(--panel); }
+.panel {
+  background: var(--panel); border: 4px solid var(--panel-edge); border-radius: 20px;
+  padding: 14px; display: flex; flex-direction: column; gap: 10px;
+}
+.panel h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 20px; letter-spacing: .03em; color: var(--sun); }
+.chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.chip {
+  font: 800 14px var(--body); color: var(--ink); text-align: left;
+  background: var(--sky-deep); border: 3px solid var(--panel-edge); border-radius: 14px;
+  padding: 9px 11px; cursor: pointer; display: flex; flex-direction: column; gap: 1px;
+  box-shadow: 0 3px 0 var(--panel-edge); transition: transform .08s;
+}
+.chip span { font-size: 11px; font-weight: 700; color: var(--muted); }
+.chip:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--panel-edge); }
+.chip[aria-pressed="true"] { background: var(--sun); color: var(--panel-edge); }
+.chip[aria-pressed="true"] span { color: #6a4a00; }
+.chip:focus-visible, .icon-btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 16px; font-size: 13px; }
+.facts div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 2px dotted rgba(188, 216, 255, .25); padding-block: 4px; }
+.facts b { color: var(--muted); font-weight: 700; }
+.facts i { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .chip { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>R.I.L.E.Y.</h1>
+    <div class="sub">Character model v1 · for approval</div>
+  </header>
+
+  <div class="stage">
+    <canvas id="c" aria-label="Rotatable 3D model of Riley"></canvas>
+    <div id="loading">Loading Riley…</div>
+    <div class="tag"><span id="clipName">Idle</span><small id="clipNote">Default · loops</small></div>
+    <div class="tools">
+      <button class="icon-btn" id="spin" aria-pressed="false" type="button">Spin</button>
+      <button class="icon-btn" id="slow" aria-pressed="false" type="button">Slow-mo</button>
+    </div>
+    <div class="hint">Drag to rotate · pinch or scroll to zoom</div>
+  </div>
+
+  <section class="panel">
+    <h2>Animation clips</h2>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Rig &amp; asset</h2>
+    <div class="facts">
+      <div><b>Height</b><i>1.30 m</i></div>
+      <div><b>Triangles</b><i>__TRIS__</i></div>
+      <div><b>Skeleton</b><i>19 body bones</i></div>
+      <div><b>Face swaps</b><i>5 eyes · 4 mouths</i></div>
+      <div><b>Clips</b><i>13</i></div>
+      <div><b>Format</b><i>glTF 2.0 (.glb)</i></div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const GLB_B64 = "__GLB__";
+const CLIPS = [
+  ["idle", "Idle", "Default · loops", 0, true],
+  ["launch_prep", "Launch prep", "In the launcher · loops", 0, true],
+  ["launch", "Launch", "Blast-off reaction", 0.35, false],
+  ["airborne", "Airborne", "Neutral flight · loops", 0.4, true],
+  ["tuck", "Tuck", "Cannonball spin pose", 0.45, true],
+  ["tumble_forward", "Tumble fwd", "Front flip · loops", 0.5, true],
+  ["tumble_backward", "Tumble back", "Back flip · loops", 0.5, true],
+  ["panic_flail", "Panic flail", "Arms flailing · loops", 0.4, true],
+  ["landing_prep", "Landing prep", "Bracing · loops", 0.3, true],
+  ["land_perfect", "Perfect landing", "Stick it + celebrate", 0, false],
+  ["land_awkward", "Awkward landing", "Wobble + sheepish", 0, false],
+  ["crash", "Cartoon crash", "Dizzy on his back", 0, false],
+  ["victory", "Victory", "Fist pumps · loops", 0, true],
+];
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 50);
+camera.position.set(1.0, 1.0, 3.4);
+const controls = new THREE.OrbitControls(camera, canvas);
+controls.target.set(0, 0.68, 0);
+controls.enableDamping = true;
+controls.minDistance = 1.0; controls.maxDistance = 6;
+controls.maxPolarAngle = Math.PI * 0.62;
+controls.enablePan = false;
+
+scene.add(new THREE.HemisphereLight(0xeaf5ff, 0x6b8fb5, 0.85));
+const key = new THREE.DirectionalLight(0xfff3e2, 1.25);
+key.position.set(-2, 3.5, 3); key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+Object.assign(key.shadow.camera, { left: -1.5, right: 1.5, top: 2.5, bottom: -0.5, near: 0.5, far: 10 });
+key.shadow.radius = 4;
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xffffff, 0.7); rim.position.set(1.5, 2.5, -3); scene.add(rim);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(1.2, 48), new THREE.ShadowMaterial({ opacity: 0.22 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.75, 0.04, 48),
+  new THREE.MeshStandardMaterial({ color: 0x2f86e6, roughness: 0.6 }));
+pad.position.y = -0.021; pad.receiveShadow = true; scene.add(pad);
+
+let mixer, actions = {}, root, current, lift = 0, liftNow = 0, spin = false, speed = 1;
+const bytes = Uint8Array.from(atob(GLB_B64), c => c.charCodeAt(0));
+new THREE.GLTFLoader().parse(bytes.buffer, '', gltf => {
+  root = gltf.scene;
+  root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  scene.add(root);
+  mixer = new THREE.AnimationMixer(root);
+  for (const clip of gltf.animations) actions[clip.name] = mixer.clipAction(clip);
+  document.getElementById('loading').hidden = true;
+  play('idle');
+}, err => { document.getElementById('loading').textContent = 'Model failed to load: ' + err.message; });
+
+const chips = document.getElementById('chips');
+for (const [id, label, note] of CLIPS) {
+  const b = document.createElement('button');
+  b.className = 'chip'; b.type = 'button'; b.id = 'clip-' + id; b.dataset.clip = id;
+  b.setAttribute('aria-pressed', 'false');
+  b.innerHTML = label + '<span>' + note + '</span>';
+  b.onclick = () => play(id);
+  chips.appendChild(b);
+}
+function play(id) {
+  const def = CLIPS.find(c => c[0] === id); const a = actions[id];
+  if (!a) return;
+  a.reset();
+  a.setLoop(def[4] ? THREE.LoopRepeat : THREE.LoopOnce);
+  a.clampWhenFinished = true;
+  if (current && current !== a) a.crossFadeFrom(current, 0.12, false);
+  a.play(); current = a; lift = def[3];
+  document.getElementById('clipName').textContent = def[1];
+  document.getElementById('clipNote').textContent = def[2];
+  chips.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.clip === id)));
+}
+const toggle = (el, fn) => el.onclick = () => { const on = el.getAttribute('aria-pressed') !== 'true'; el.setAttribute('aria-pressed', String(on)); fn(on); };
+toggle(document.getElementById('spin'), on => spin = on);
+toggle(document.getElementById('slow'), on => speed = on ? 0.25 : 1);
+
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) {
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+}
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  resize();
+  if (mixer) mixer.update(dt * speed);
+  if (root) {
+    liftNow += (lift - liftNow) * Math.min(1, dt * 6);
+    root.position.y = liftNow;
+    if (spin) root.rotation.y += dt * 0.8;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>
